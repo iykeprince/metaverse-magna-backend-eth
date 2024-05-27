@@ -1,7 +1,7 @@
 {
-  "name": "typescript-starter",
+  "name": "metaverse",
   "version": "1.0.0",
-  "description": "",
+  "description": "an assesment for metaverse",
   "main": "index.js",
   "scripts": {
     "build": "rimraf ./dist && tsc",

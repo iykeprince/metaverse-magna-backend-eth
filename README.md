@@ -1,4 +1,4 @@
-# Your Application Name
+# Metaverse Magna API assessment
 
 ## Prerequisites
 Before you start the application, please follow these steps:
