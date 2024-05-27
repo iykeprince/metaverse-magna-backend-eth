@@ -12,6 +12,7 @@ import { Transaction } from "../types/transaction.type";
 import { Server, Socket } from "socket.io";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { ETH_TO_USD } from "../../configs/config";
+import { ethers } from "ethers";
 
 const providerService = Container.get(ProviderService);
 
@@ -27,10 +28,6 @@ export const getSubscriptions = async (
     const data = await extractTransactionDetails(blockNumber);
     io.emit(ALL_EVENT, data);
   });
-  // socket.on(ALL_EVENT, () => {
-  //   // Emit all events to the client
-  //   io.emit(ALL_EVENT, data);
-  // });
 
   // Subscribe to events where address is either sender or receiver
   socket.on(BOTH_EVENT, (message) => {
@@ -77,41 +74,63 @@ export const getSubscriptions = async (
   // Subscribe to events within price ranges
   socket.on(PRICE_RANGE_EVENT, (message) => {
     const { range } = message;
-    console.log("range", range);
+
     provider?.on("block", async (blockNumber) => {
       const data = await extractTransactionDetails(blockNumber);
       // Emit events within the specified price range
-      console.log("data", JSON.stringify(data));
+      let minRange = 0;
+      let maxRange = 0;
+
+      switch (range) {
+        case "0-100":
+          minRange = 0;
+          maxRange = 100;
+          break;
+        case "100-500":
+          minRange = 100;
+          maxRange = 500;
+          break;
+        case "500-2000":
+          minRange = 500;
+          maxRange = 2000;
+          break;
+        case "2000-5000":
+          minRange = 2000;
+          maxRange = 5000;
+          break;
+        case ">5000":
+          minRange = 5000;
+          break;
+        default:
+          // Invalid filter
+          console.log("invalid filter range");
+          return;
+      }
       const transactions = (data as Transaction[]).map((transaction) => {
         const amountInUSD = exchangeAmountInUSD(transaction.ValueInWEI);
-        console.log("amount in usd", amountInUSD);
-        switch (range) {
-          case amountInUSD >= 0 && amountInUSD <= 100:
-            return transaction;
-
-          case amountInUSD > 100 && amountInUSD <= 500:
-            return transaction;
-
-          case amountInUSD > 500 && amountInUSD <= 2000:
-            return transaction;
-          case amountInUSD > 2000 && amountInUSD <= 5000:
-            console.log("tranx");
-            return transaction;
-
-          case amountInUSD > 5000:
-            return transaction;
-          default:
-            // not valid range
-            break;
+        if (amountInUSD >= minRange && amountInUSD <= maxRange) {
+          return transaction;
         }
       });
 
-      socket.emit(PRICE_RANGE_EVENT, transactions);
+      socket.emit(
+        PRICE_RANGE_EVENT,
+        transactions.filter((tx) => tx !== null)
+      );
     });
   });
 };
 
-const exchangeAmountInUSD = (value: number) => value * ETH_TO_USD;
+const exchangeAmountInUSD = (value: number) => {
+  // Convert Wei to Ether
+  const weiBigInt = BigInt(value);
+
+  // Convert Wei to Ether
+  const etherAmount = ethers.formatUnits(weiBigInt.toString(), "ether");
+  console.log("ether value", etherAmount);
+  console.log("usd value", parseFloat(etherAmount) * ETH_TO_USD);
+  return parseFloat(etherAmount) * ETH_TO_USD;
+};
 
 const extractTransactionDetails = async (blockNumber: number) => {
   const provider = await providerService.getProvider();
@@ -128,7 +147,6 @@ const extractTransactionDetails = async (blockNumber: number) => {
         GasPriceInWEI: Number(tx.gasPrice),
         ValueInWEI: Number(tx.value),
       };
-      console.log(data);
       arr.push(data);
     });
 
