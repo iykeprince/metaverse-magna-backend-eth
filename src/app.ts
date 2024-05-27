@@ -6,9 +6,15 @@ import { AppDataSource } from "./commons/db/data-source";
 import AuthController from "./controllers/auth.controller";
 import { socketAuth } from "./commons/middlewares/socket-auth.middleware";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
-import WebSocket from "ws";
 import { API_KEY } from "./configs/config";
 import { ethers } from "ethers";
+import {
+  ALL_EVENT,
+  BOTH_EVENT,
+  PRICE_RANGE_EVENT,
+  RECEIVER_EVENT,
+  SENDER_EVENT,
+} from "./configs/event.config";
 
 type Transaction = {
   SenderAddress: string;
@@ -66,7 +72,7 @@ export const init = (port: number) => {
       console.log("New connection:", (socket as any).username);
 
       // Subscribe to all events
-      socket.on("subscribe:all", () => {
+      socket.on(ALL_EVENT, () => {
         // Emit all events to the client
         provider.on("block", async (blockNumber) => {
           const data = await extractTransactionDetails(blockNumber);
@@ -74,10 +80,10 @@ export const init = (port: number) => {
         });
       });
       // Subscribe to events where address is either sender or receiver
-      socket.on("subscribe:both", (payload) => {
+      socket.on(BOTH_EVENT, (payload) => {
         // Emit events where address is either sender or receiver
         provider.on("block", async (blockNumber) => {
-          const data =  await extractTransactionDetails(blockNumber);
+          const data = await extractTransactionDetails(blockNumber);
           const filteredResult = data?.filter(
             (event) =>
               event.SenderAddress === payload.sender ||
@@ -89,7 +95,7 @@ export const init = (port: number) => {
       });
 
       //   // Subscribe to events where address is the sender
-      socket.on("sender", (payload) => {
+      socket.on(SENDER_EVENT, (payload) => {
         // Emit events where address is the sender
         provider.on("block", async (blockNumber) => {
           const data = await extractTransactionDetails(blockNumber);
@@ -101,7 +107,7 @@ export const init = (port: number) => {
       });
 
       //   // Subscribe to events where address is the receiver
-      socket.on("receiver", (payload) => {
+      socket.on(RECEIVER_EVENT, (payload) => {
         // Emit events where address is the receiver
 
         provider.on("block", async (blockNumber) => {
@@ -113,43 +119,43 @@ export const init = (port: number) => {
         });
       });
       // Subscribe to events within price ranges
-      //   socket.on("subscribe:price_range", (range) => {
-      //     // Emit events within the specified price range
-      //     provider.on("block", async  (blockNumber) => {
-      //         const data = await extractTransactionDetails(blockNumber);
-      //       const ethToUsd = 5000; // 1 ETH = $5,000
-      //       const amountInUSD = data![0].ValueInWEI * ethToUsd;
-      //       switch (range) {
-      //         case "a":
-      //           if (amountInUSD >= 0 && amountInUSD <= 100) {
-      //             socket.emit("event", event);
-      //           }
-      //           break;
-      //         case "b":
-      //           if (amountInUSD > 100 && amountInUSD <= 500) {
-      //             socket.emit("event", event);
-      //           }
-      //           break;
-      //         case "c":
-      //           if (amountInUSD > 500 && amountInUSD <= 2000) {
-      //             socket.emit("event", event);
-      //           }
-      //           break;
-      //         case "d":
-      //           if (amountInUSD > 2000 && amountInUSD <= 5000) {
-      //             socket.emit("event", event);
-      //           }
-      //           break;
-      //         case "e":
-      //           if (amountInUSD > 5000) {
-      //             socket.emit("event", event);
-      //           }
-      //           break;
-      //         default:
-      //           break;
-      //       }
-      //     });
+      // socket.on(PRICE_RANGE_EVENT, (range) => {
+      //   // Emit events within the specified price range
+      //   provider.on("block", async  (blockNumber) => {
+      //       const data = await extractTransactionDetails(blockNumber);
+      //     const ethToUsd = 5000; // 1 ETH = $5,000
+      //     const amountInUSD = data![0].ValueInWEI * ethToUsd;
+      //     switch (range) {
+      //       case "a":
+      //         if (amountInUSD >= 0 && amountInUSD <= 100) {
+      //           socket.emit("event", event);
+      //         }
+      //         break;
+      //       case "b":
+      //         if (amountInUSD > 100 && amountInUSD <= 500) {
+      //           socket.emit("event", event);
+      //         }
+      //         break;
+      //       case "c":
+      //         if (amountInUSD > 500 && amountInUSD <= 2000) {
+      //           socket.emit("event", event);
+      //         }
+      //         break;
+      //       case "d":
+      //         if (amountInUSD > 2000 && amountInUSD <= 5000) {
+      //           socket.emit("event", event);
+      //         }
+      //         break;
+      //       case "e":
+      //         if (amountInUSD > 5000) {
+      //           socket.emit("event", event);
+      //         }
+      //         break;
+      //       default:
+      //         break;
+      //     }
       //   });
+      // });
 
       io.on("disconnect", () => {
         console.log("Disconnected");
