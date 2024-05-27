@@ -22,19 +22,22 @@ export const getSubscriptions = async (
   const provider = await providerService.getProvider();
   console.log("provider", provider?._network.name);
 
+  // Subscribe to all events
   provider?.on("block", async (blockNumber) => {
     const data = await extractTransactionDetails(blockNumber);
+    io.emit(ALL_EVENT, data);
+  });
+  // socket.on(ALL_EVENT, () => {
+  //   // Emit all events to the client
+  //   io.emit(ALL_EVENT, data);
+  // });
 
-    // Subscribe to all events
-    socket.on(ALL_EVENT, () => {
-      // Emit all events to the client
-      io.emit(ALL_EVENT, data);
-    });
-
-    // Subscribe to events where address is either sender or receiver
-    socket.on(BOTH_EVENT, (message) => {
-      // Emit events where address is either sender or receiver
-      const { payload } = message;
+  // Subscribe to events where address is either sender or receiver
+  socket.on(BOTH_EVENT, (message) => {
+    // Emit events where address is either sender or receiver
+    const { payload } = message;
+    provider?.on("block", async (blockNumber) => {
+      const data = await extractTransactionDetails(blockNumber);
       const filteredResult = data?.filter(
         (event: Transaction) =>
           event.SenderAddress === payload.sender ||
@@ -43,34 +46,45 @@ export const getSubscriptions = async (
 
       io.emit(BOTH_EVENT, filteredResult);
     });
+  });
 
-    // Subscribe to events where address is the sender
-    socket.on(SENDER_EVENT, (message) => {
-      // Emit events where address is the sender
-      const { payload } = message;
+  // Subscribe to events where address is the sender
+  socket.on(SENDER_EVENT, (message) => {
+    // Emit events where address is the sender
+    const { payload } = message;
+    provider?.on("block", async (blockNumber) => {
+      const data = await extractTransactionDetails(blockNumber);
       const filteredResult = data?.filter(
         (event: any) => event.SenderAddress === payload.sender
       );
       io.emit(SENDER_EVENT, filteredResult);
     });
+  });
 
-    // Subscribe to events where address is the receiver
-    socket.on(RECEIVER_EVENT, (message) => {
-      // Emit events where address is the receiver
-      const { payload } = message;
-
+  // Subscribe to events where address is the receiver
+  socket.on(RECEIVER_EVENT, (message) => {
+    // Emit events where address is the receiver
+    const { payload } = message;
+    provider?.on("block", async (blockNumber) => {
+      const data = await extractTransactionDetails(blockNumber);
       const filteredResult = data?.filter(
         (event: any) => event.ReceiverAddress === payload.receiver
       );
       io.emit(RECEIVER_EVENT, filteredResult);
     });
+  });
 
-    // Subscribe to events within price ranges
-    socket.on(PRICE_RANGE_EVENT, (message) => {
-      const { range } = message;
+  // Subscribe to events within price ranges
+  socket.on(PRICE_RANGE_EVENT, (message) => {
+    const { range } = message;
+    console.log("range", range);
+    provider?.on("block", async (blockNumber) => {
+      const data = await extractTransactionDetails(blockNumber);
       // Emit events within the specified price range
+      console.log("data", JSON.stringify(data));
       const transactions = (data as Transaction[]).map((transaction) => {
         const amountInUSD = exchangeAmountInUSD(transaction.ValueInWEI);
+        console.log("amount in usd", amountInUSD);
         switch (range) {
           case amountInUSD >= 0 && amountInUSD <= 100:
             return transaction;
@@ -81,6 +95,7 @@ export const getSubscriptions = async (
           case amountInUSD > 500 && amountInUSD <= 2000:
             return transaction;
           case amountInUSD > 2000 && amountInUSD <= 5000:
+            console.log("tranx");
             return transaction;
 
           case amountInUSD > 5000:
