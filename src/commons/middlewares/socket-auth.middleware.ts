@@ -12,9 +12,9 @@ export const socketAuth = (
 ) => {
   const token = socket.handshake.headers.authorization;
   if (!token) return next(new Error("Unauthorized"));
-  console.log("token", token);
+
   const decoded: any = jwt.verify(token, JWT_SECRET);
-  console.log("decoded", decoded);
+
   socket.data["user"] = decoded;
   next();
 };

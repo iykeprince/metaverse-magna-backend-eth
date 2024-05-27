@@ -6,6 +6,10 @@ import AuthController from "./controllers/auth.controller";
 import { socketAuth } from "./commons/middlewares/socket-auth.middleware";
 import { DefaultEventsMap } from "socket.io/dist/typed-events";
 import { getSubscriptions } from "./commons/utils/subscription.util";
+import Container from "typedi";
+import ProviderService from "./services/provider.service";
+
+const providerService = Container.get(ProviderService);
 
 export const init = () => {
   const app = express();
@@ -20,12 +24,14 @@ export const init = () => {
       socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>
     ) => {
       // ...
+      const provider = await providerService.getProvider()
       console.log("New connection:", socket.data.user);
 
       await getSubscriptions(io, socket);
 
       io.on("disconnect", () => {
         console.log("Disconnected");
+        provider?.websocket.close();
       });
     }
   );
