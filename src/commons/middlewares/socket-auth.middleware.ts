@@ -10,12 +10,11 @@ export const socketAuth = (
   socket: Socket<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
   next: (err?: ExtendedError | undefined) => void
 ) => {
-  const token = socket.handshake.auth.token;
+  const token = socket.handshake.headers.authorization;
   if (!token) return next(new Error("Unauthorized"));
-
-  jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
-    if (err) return next(new Error("Unauthorized"));
-    (socket as any).username = decoded.username;
-    next();
-  });
+  console.log("token", token);
+  const decoded: any = jwt.verify(token, JWT_SECRET);
+  console.log("decoded", decoded);
+  socket.data["user"] = decoded;
+  next();
 };
