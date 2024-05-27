@@ -26,7 +26,7 @@ export const getSubscriptions = async (
     const data = await extractTransactionDetails(blockNumber);
 
     // Subscribe to all events
-    socket.on(ALL_EVENT, (data) => {
+    socket.on(ALL_EVENT, () => {
       // Emit all events to the client
       io.emit(ALL_EVENT, data);
     });
@@ -34,7 +34,7 @@ export const getSubscriptions = async (
     // Subscribe to events where address is either sender or receiver
     socket.on(BOTH_EVENT, (message) => {
       // Emit events where address is either sender or receiver
-      const { payload, data } = message;
+      const { payload } = message;
       const filteredResult = data?.filter(
         (event: Transaction) =>
           event.SenderAddress === payload.sender ||
@@ -47,7 +47,7 @@ export const getSubscriptions = async (
     // Subscribe to events where address is the sender
     socket.on(SENDER_EVENT, (message) => {
       // Emit events where address is the sender
-      const { payload, data } = message;
+      const { payload } = message;
       const filteredResult = data?.filter(
         (event: any) => event.SenderAddress === payload.sender
       );
@@ -57,7 +57,7 @@ export const getSubscriptions = async (
     // Subscribe to events where address is the receiver
     socket.on(RECEIVER_EVENT, (message) => {
       // Emit events where address is the receiver
-      const { payload, data } = message;
+      const { payload } = message;
 
       const filteredResult = data?.filter(
         (event: any) => event.ReceiverAddress === payload.receiver
@@ -67,7 +67,7 @@ export const getSubscriptions = async (
 
     // Subscribe to events within price ranges
     socket.on(PRICE_RANGE_EVENT, (message) => {
-      const { range, data } = message;
+      const { range } = message;
       // Emit events within the specified price range
       const transactions = (data as Transaction[]).map((transaction) => {
         const amountInUSD = exchangeAmountInUSD(transaction.ValueInWEI);
